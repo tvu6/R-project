@@ -1,49 +1,236 @@
-# History files
-.Rhistory
-.Rapp.history
+Using library readr to import the data
+library(readr)
+Billionaire <- read_csv("forbes_billionaires_geo_3.csv.xls")
+View(Billionaire)
+summary(Billionaire)
+#Age has 125 NAs, Children has 1203NAs, Selfmade has 18NAs
 
-# Session Data files
-.RData
-.RDataTmp
+#Using knn to impute missing values 
+library(VIM)
+Billionaire=kNN(Billionaire, variable = c("Children","Age"), k=5)
+summary(Billionaire)
 
-# User-specific files
-.Ruserdata
+#removing Selfmade
+Billionaire$Self_made = NULL
 
-# Example code in package build process
-*-Ex.R
+#removing zero and nearzero var
+library(caret)
+nz_Billionaire=nearZeroVar(Billionaire)
+nz_Billionaire
+Billionaire=Billionaire[,-c(nz_Billionaire)]
+summary(Billionaire)
+names(Billionaire)
 
-# Output files from R CMD build
-/*.tar.gz
+#Creating dummy variables for Country, Education, Status, 
+#Country: If the country of origin is United States the value is 1, else is 0 
+Billionaire$Country1=ifelse(Billionaire$Country=="United States",1,0)
+#Education: If it contains the word “Bachelor” the value is 1, else is 0
+Billionaire$Education2=ifelse(grepl("Bachelor", Billionaire$Education), 1, 0)
+#Status: If it contains the word “Married or Remarried” the value is 1, else is 0
+Billionaire$Status3=ifelse(grepl("Married|Remarried", Billionaire$Status), 1, 0)
+dim(Billionaire)
 
-# Output files from R CMD check
-/*.Rcheck/
+#Deleting Country, Education, Status, Self-made variables
+Billionaire = subset(Billionaire, select = -c(Country, Education, Status) )
+dim(Billionaire)
 
-# RStudio files
-.Rproj.user/
+#Checking for influential observations before removing any values
+lm.Billionaire=lm(NetWorth~Age+Children+Country1+Education2+Status3, data = Billionaire)
+summary(lm.Billionaire)
+#Based on the summary we can conclude that Children and Education are significant 
+#to networth and they are both positive which means the higher the number of children
+#a billionaire has, the higher their networth. And billionaires with a bachelor's
+#have higher networth than the ones without. 
 
-# produced vignettes
-vignettes/*.html
-vignettes/*.pdf
+#Deleting Name, Source, Residence, Citizenship, geometry
+Billionaire = subset(Billionaire, select = -c(Name, Source, Residence, Citizenship, geometry, Children_imp) )
+dim(Billionaire)
 
-# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
-.httr-oauth
+#Running a linear regression on the significant variables
+lm.Billionaire2=lm(NetWorth~Children+Education2, data = Billionaire)
+summary(lm.Billionaire2)
 
-# knitr and R markdown default cache directories
-*_cache/
-/cache/
+#Running a linear regression on the significant with variable transformation (LOG) 
+lm.Billionaire3=lm(log(NetWorth)~Children+Education2, data = Billionaire) 
+summary(lm.Billionaire3) 
+#Based on adjusted r square lm.Billionaire3 is slightly better model than lm.Billionaire2 & lm.Billionaire4 
 
-# Temporary files created by R markdown
-*.utf8.md
-*.knit.md
+#Running a linear regression on the significant with variable transformation (sqrt) 
+lm.Billionaire4=lm(sqrt(NetWorth)~Children+Education2, data = Billionaire) 
+summary(lm.Billionaire4) 
 
-# R Environment Variables
-.Renviron
+#testing for multicollienarity
+library(HH)
+vif(lm.Billionaire)
+#all values are less than 5, no multicollinearity
 
-# pkgdown site
-docs/
+# calculating COOK DISTANCE and ploting its with abline function 
+cd.lm=cooks.distance(lm.Billionaire)
+plot(cd.lm, pch="+", main="Influential Observations by Cook's Distance")
 
-# translation temp files
-po/*~
+#Rule 1: 4*mean
+abline(h=4*mean(cd.lm), col="red") 
+sum(cd.lm>4*mean(cd.lm))
+# Rule1, 58 obsrvations are flagged ,are outliers/ influential observations
 
-# RStudio Connect folder
-rsconnect/
+#Rule 2: 
+abline(h=1, col="blue")
+sum(cd.lm>1)
+#Rule2, no observations flagged
+
+#Pairwise correlation , using cor function to calculate the correlation matrix
+Billionaire_corr=cor(Billionaire)
+dim(Billionaire_corr)
+
+#using corrplot function, generate correlation plot of predictors
+library(corrplot)
+corrplot(Billionaire_corr)
+corrplot(Billionaire_corr, order = "hclust")
+corrplot(Billionaire_corr, order = "hclust", tl.cex = 0.5)
+
+#using findCorrelation function to indetify predictors that have correlation
+#coeficients of 0.75 or higher 
+highCorr=findCorrelation(Billionaire_corr, cutoff = 0.75)
+length(highCorr)
+highCorr
+#No high correlation 
+
+#Diagnostic plots
+par(mfrow=c(2,2))
+plot(lm.Billionaire)
+
+#Classification1
+attach(Billionaire)
+glm.Billionaire=glm(Education2~NetWorth, family = binomial)
+summary(glm.Billionaire)
+#When the NetWorth increases so does the probability that Y=1 (Education=Bachelors)
+
+#Running test error 
+glm.probs1 = predict(glm.Billionaire, test.y, type = "response")
+glm.pred1 = rep("0", 1000)
+glm.pred1 [1:20]
+
+glm.probtr1 = predict(glm.Billionaire, type = "response")
+glm.predtr1=rep(0,nrow(test.x)) #training error
+glm.predtr1[1:20]
+
+glm.predtr1[glm.probtr1>0.5]= "1"
+glm.predtr1[1:20]
+
+table(glm.predtr1, test.y)
+mean(glm.predtr1!= test.y)#test error 
+
+#Classification2
+attach(Billionaire)
+glm.Billionaire2=glm(Country1~Status3, family = binomial)
+summary(glm.Billionaire2)
+#Status is positive which means, people who are married have a higher
+#probability that Y=1 (Country=USA), than not married people
+
+
+predict(glm.Billionaire2, newdata = data.frame(NetWorth=50), type = "response")
+predict(glm.Billionaire2, newdata = data.frame(NetWorth=100), type = "response")
+predict(glm.Billionaire2, newdata = data.frame(NetWorth=150), type = "response")
+
+Log3=glm(Country1~NetWorth+Age, family = binomial)
+summary(Log3)
+#Age is significant. Age and NetWorth are both negative which means when :
+#Age increases, the probability that Y=1 (Selfmade=1) decreases
+#NetWorth increases, the probability that Y=1 (Selfmade=1) decreases 
+
+
+#Creating test and train data set
+dim(Billionaire)
+set.seed(1)
+train = sample(1755,1000)
+train.x = Billionaire[train,]
+test.x = Billionaire[-train,]
+attach(Billionaire)
+train.y = NetWorth[train]
+test.y = NetWorth[-train]
+train.y[1:20]
+
+#Classification1
+attach(Billionaire)
+glm.Billionaire=glm(Education2~NetWorth, family = binomial)
+summary(glm.Billionaire)
+#When the NetWorth increases so does the probability that Y=1 (Education=Bachelors)
+
+#Running test error 
+glm.probs1 = predict(glm.Billionaire, test.y, type = "response")
+glm.pred1 = rep("0", 1000)
+glm.pred1 [1:20]
+
+glm.probtr1 = predict(glm.Billionaire, type = "response")
+glm.predtr1=rep(0,nrow(test.x)) #training error
+glm.predtr1[1:20]
+
+glm.predtr1[glm.probtr1>0.5]= "1"
+glm.predtr1[1:20]
+
+table(glm.predtr1, test.y)
+mean(glm.predtr1!= test.y)#test error 
+
+#Classification2
+attach(Billionaire)
+glm.Billionaire2=glm(Country1~Status3, family = binomial)
+summary(glm.Billionaire2)
+#Status is positive which means, people who are married have a higher
+#probability that Y=1 (Country=USA), than not married people
+
+
+predict(glm.Billionaire2, newdata = data.frame(NetWorth=50), type = "response")
+predict(glm.Billionaire2, newdata = data.frame(NetWorth=100), type = "response")
+predict(glm.Billionaire2, newdata = data.frame(NetWorth=150), type = "response")
+
+Log3=glm(Country1~NetWorth+Age, family = binomial)
+summary(Log3)
+#Age is significant. Age and NetWorth are both negative which means when :
+#Age increases, the probability that Y=1 (Selfmade=1) decreases
+#NetWorth increases, the probability that Y=1 (Selfmade=1) decreases 
+
+
+#KNN
+library(class)
+set.seed(1)
+knn.pred = knn(train.x , test.x, train.y, 1)
+table(knn.pred, test.y)
+mean(knn.pred != test.y)
+#0.5920228 , error rate of 59.2% with k=1
+
+knn.pred2 = knn(train.x , test.x, train.y, 3)
+table(knn.pred2, test.y)
+mean(knn.pred2 != test.y)
+#0.6518 , error rate of 65.18% with k=3
+
+knn.pred3 = knn(train.x , test.x, train.y, 5)
+table(knn.pred3, test.y)
+mean(knn.pred3 != test.y)
+#0.6609, error rate of 66.1% with k=5
+
+Billtest= Billionaire[train,]
+Billtrain = Billionaire[-train,]
+
+#Logistic
+glm.training = glm(Country1~NetWorth, data = Billionaire, family = binomial)
+glm.probs = predict(glm.training, test.y, type = "response")
+glm.pred = rep("0", 1000)
+glm.pred [1:20]
+
+glm.probtr = predict(glm.training, type = "response")
+glm.predtr=rep(0,nrow(test.x)) #training error
+glm.predtr[1:20]
+
+glm.predtr[glm.probtr>0.5]= "1"
+glm.predtr[1:20]
+
+table(glm.predtr, train.y)
+mean(glm.predtr!= train.y)#test error 
+
+View(Billionaire)
+
+save.image(file = "myworkspace_Group4.RData")
+savehistory(file = "myworkspace_Group4.Rhistory")
+
+
+
