@@ -21,7 +21,7 @@ names, net-worth, country of origin, source, rank, age, residence, citizenship, 
   + diagnostics plots: residuals and fitted, normal Q-Q, scale-location
 # Instruction
   + set up R studio amd new file
-  + download and import the Billionaire Dataset
+  + download and import forbes_billionaire_geo_3.csv.xls
   + run the R-script
 
   
