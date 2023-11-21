@@ -1,28 +1,24 @@
 # Overview
-In this project,the purpose  is to learn about billionaires around the world. We want to learn how the relationships between their personal background affect or relate to each other. Furthermore, exploring if there are trends considering education level, background, and family status.
+This project explores, analyzes, and visualizes data using R programming language and related libraries. It provides scripts, notebooks, and visualizations demonstrating various data analysis techniques and visualization methods. The purpose is to learn about billionaires around the world and explore if there are trends considering education level, background, and family status.
 
 # Dataset
-names, net-worth, country of origin, source, rank, age, residence, citizenship, marital status, children, education, self-made, geometry
+Includes basic personal information: names, net-worth, country of origin, source, rank, age, residence, citizenship, marital status, children, education, self-made, geometry
 
-# Coding
-#### Structure the dataset:
-  + knn from VIM library to imputee missing values
-  + remove zero and nearzero variances 
-  + created dummy variables
-#### Correlation/Prediction:
-  + linear regression model
-  + classification model 
-  + testing and training dataset
-#### Test error using KNN to find most efficient model
-  - k=1,3,5
-#### Graphs:
-  + cook distance (with red abline
-  + corrrelation graph
-  + diagnostics plots: residuals and fitted, normal Q-Q, scale-location
-# Instruction
-  + set up R studio amd new file
-  + download and import forbes_billionaire_geo_3.csv.xls
-  + run the R-script
+# Key features
+  - Data Processing: R scripts and Jupyter notebooks demonstrating data import, cleaning, and preprocessing techniques.
+  - Exploratory Data Analysis (EDA): Code examples for exploratory data analysis, including summary statistics, data visualization, and correlation analysis.
+  - Statistical Modeling: R scripts showcasing statistical modeling techniques such as linear regression analysis, classification, or hypothesis testing.
+  - Visualizations: Code and examples for creating insightful visualizations using corrplot, cook distance, diagnostic plots, or other visualization libraries.
+  - Documentation: Detailed explanations within scripts and notebooks, providing insights into the analysis performed.
 
-  
+# Usage
+  - Explore the provided R scripts and notebooks to understand data analysis techniques and code implementation.
+  - Execute R scripts or run Jupyter notebooks to replicate the data analysis steps.
+  - Modify scripts or create new notebooks based on the examples provided for your data analysis projects.
 
+
+# Contributing
+Contributions to improve or expand the project are encouraged! Feel free to work with the repository, make changes, and submit a pull request.
+
+# Acknowledgements
+Special thanks to Kaggle for providing the dataset used in this project.
